@@ -11,6 +11,7 @@ import {
   CheckCircle2,
   Loader2,
   MapPin,
+  MessageCircle,
   Shield,
   Users,
 } from "lucide-react";
@@ -309,6 +310,14 @@ export function TransactionWorkspace({
               : "Waiting for buyer to confirm receipt…"}
         </p>
       ) : null}
+
+      <Link
+        href={`/transactions/${transaction.id}/chat`}
+        className="flex items-center justify-center gap-2 rounded-xl bg-white py-3 text-sm font-medium text-brand-primary shadow-sm ring-1 ring-black/5 transition hover:bg-brand-primary/5"
+      >
+        <MessageCircle className="h-4 w-4" />
+        Message {isBuyer ? "seller" : "buyer"}
+      </Link>
 
       <p className="flex items-center justify-center gap-2 text-xs text-brand-muted">
         <Shield className="h-4 w-4 text-brand-success" />
