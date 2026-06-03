@@ -1,16 +1,8 @@
+import { MAX_OFFER_ROUNDS, type OfferWithBuyer } from "@/lib/offers-shared";
 import { createServerClient } from "@/lib/supabase/server";
 import type { Offer, OfferStatus } from "@/types";
 
-export const MAX_OFFER_ROUNDS = 5;
-
-export interface OfferWithBuyer extends Offer {
-  buyer: {
-    id: string;
-    display_name: string;
-    avg_rating: number;
-  } | null;
-  transaction: { id: string } | null;
-}
+export { MAX_OFFER_ROUNDS, type OfferWithBuyer };
 
 export async function fetchOffersForListing(
   listingId: string,
@@ -62,6 +54,16 @@ export async function createTransactionFromAcceptedOffer(
 
   if (transactionError || !transaction) {
     throw new Error("Could not create transaction");
+  }
+
+  const { error: escrowError } = await admin.from("escrow").insert({
+    transaction_id: transaction.id,
+    amount: offer.proposed_price,
+    state: "pending",
+  });
+
+  if (escrowError) {
+    throw new Error("Could not create escrow record");
   }
 
   await admin

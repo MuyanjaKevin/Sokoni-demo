@@ -17,7 +17,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { MAX_OFFER_ROUNDS, type OfferWithBuyer } from "@/lib/offers";
+import { MAX_OFFER_ROUNDS, type OfferWithBuyer } from "@/lib/offers-shared";
 import type { ListingWithSeller } from "@/lib/listings-data";
 import { formatUGX } from "@/lib/utils";
 import type { ApiResponse } from "@/types";

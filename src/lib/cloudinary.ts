@@ -1,5 +1,5 @@
 import { createHash } from "crypto";
-import { config } from "@/lib/config";
+import { getConfig } from "@/lib/config";
 
 const SIGNED_URL_TTL_SECONDS = 60;
 
@@ -15,6 +15,7 @@ export interface CloudinarySignedUpload {
 export function createSignedUploadParams(
   folder = "listings",
 ): CloudinarySignedUpload {
+  const config = getConfig();
   const timestamp = Math.floor(Date.now() / 1000);
   const paramsToSign = `folder=${folder}&timestamp=${timestamp}`;
   const signature = createHash("sha1")
