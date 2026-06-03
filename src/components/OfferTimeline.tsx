@@ -1,6 +1,6 @@
 import { CheckCircle2, Clock, XCircle } from "lucide-react";
 import { cn, formatUGX } from "@/lib/utils";
-import type { OfferWithBuyer } from "@/lib/offers";
+import type { OfferWithBuyer } from "@/lib/offers-shared";
 import type { OfferStatus } from "@/types";
 
 const STATUS_STYLES: Record<

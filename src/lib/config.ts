@@ -6,15 +6,36 @@ function requireEnv(key: string): string {
   return value;
 }
 
-export const config = {
+type AppConfig = {
   supabase: {
-    url: requireEnv("NEXT_PUBLIC_SUPABASE_URL"),
-    anonKey: requireEnv("NEXT_PUBLIC_SUPABASE_ANON_KEY"),
-    serviceRoleKey: requireEnv("SUPABASE_SERVICE_ROLE_KEY"),
-  },
+    url: string;
+    anonKey: string;
+    serviceRoleKey: string;
+  };
   cloudinary: {
-    cloudName: requireEnv("NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME"),
-    apiKey: requireEnv("CLOUDINARY_API_KEY"),
-    apiSecret: requireEnv("CLOUDINARY_API_SECRET"),
-  },
-} as const;
+    cloudName: string;
+    apiKey: string;
+    apiSecret: string;
+  };
+};
+
+let cachedConfig: AppConfig | null = null;
+
+/** Lazy load so client bundles never evaluate env at import time. */
+export function getConfig(): AppConfig {
+  if (!cachedConfig) {
+    cachedConfig = {
+      supabase: {
+        url: requireEnv("NEXT_PUBLIC_SUPABASE_URL"),
+        anonKey: requireEnv("NEXT_PUBLIC_SUPABASE_ANON_KEY"),
+        serviceRoleKey: requireEnv("SUPABASE_SERVICE_ROLE_KEY"),
+      },
+      cloudinary: {
+        cloudName: requireEnv("NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME"),
+        apiKey: requireEnv("CLOUDINARY_API_KEY"),
+        apiSecret: requireEnv("CLOUDINARY_API_SECRET"),
+      },
+    };
+  }
+  return cachedConfig;
+}
