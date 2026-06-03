@@ -137,26 +137,87 @@ export interface ApiResponse<T> {
   error?: string;
 }
 
-export interface Database {
+export type Database = {
   public: {
     Tables: {
-      profiles: { Row: Profile; Insert: Partial<Profile>; Update: Partial<Profile> };
-      listings: { Row: Listing; Insert: Partial<Listing>; Update: Partial<Listing> };
-      offers: { Row: Offer; Insert: Partial<Offer>; Update: Partial<Offer> };
+      profiles: {
+        Row: Profile;
+        Insert: {
+          id: string;
+          phone: string;
+          display_name: string;
+          avatar_url?: string | null;
+          district?: string | null;
+        };
+        Update: {
+          display_name?: string;
+          avatar_url?: string | null;
+          district?: string | null;
+          updated_at?: string;
+          is_active?: boolean;
+        };
+        Relationships: [];
+      };
+      listings: {
+        Row: Listing;
+        Insert: Omit<Listing, "id" | "created_at" | "deleted_at">;
+        Update: Partial<Omit<Listing, "id" | "created_at">>;
+        Relationships: [];
+      };
+      offers: {
+        Row: Offer;
+        Insert: Omit<Offer, "id" | "created_at">;
+        Update: Partial<Omit<Offer, "id" | "created_at">>;
+        Relationships: [];
+      };
       transactions: {
         Row: Transaction;
-        Insert: Partial<Transaction>;
-        Update: Partial<Transaction>;
+        Insert: Omit<Transaction, "id" | "created_at" | "updated_at">;
+        Update: Partial<Omit<Transaction, "id" | "created_at">>;
+        Relationships: [];
       };
-      escrow: { Row: Escrow; Insert: Partial<Escrow>; Update: Partial<Escrow> };
+      escrow: {
+        Row: Escrow;
+        Insert: Omit<Escrow, "id" | "created_at" | "updated_at">;
+        Update: Partial<Omit<Escrow, "id" | "created_at">>;
+        Relationships: [];
+      };
       escrow_logs: {
         Row: EscrowLog;
-        Insert: Partial<EscrowLog>;
-        Update: Partial<EscrowLog>;
+        Insert: Omit<EscrowLog, "id" | "created_at">;
+        Update: Partial<Omit<EscrowLog, "id" | "created_at">>;
+        Relationships: [];
       };
-      messages: { Row: Message; Insert: Partial<Message>; Update: Partial<Message> };
-      ratings: { Row: Rating; Insert: Partial<Rating>; Update: Partial<Rating> };
-      otp_codes: { Row: OtpCode; Insert: Partial<OtpCode>; Update: Partial<OtpCode> };
+      messages: {
+        Row: Message;
+        Insert: Omit<Message, "id" | "created_at">;
+        Update: Partial<Omit<Message, "id" | "created_at">>;
+        Relationships: [];
+      };
+      ratings: {
+        Row: Rating;
+        Insert: Omit<Rating, "id" | "created_at">;
+        Update: Partial<Omit<Rating, "id" | "created_at">>;
+        Relationships: [];
+      };
+      otp_codes: {
+        Row: OtpCode;
+        Insert: {
+          phone_hash: string;
+          otp_hash: string;
+          expires_at: string;
+          attempt_count?: number;
+        };
+        Update: {
+          used_at?: string | null;
+          attempt_count?: number;
+        };
+        Relationships: [];
+      };
     };
+    Views: Record<string, never>;
+    Functions: Record<string, never>;
+    Enums: Record<string, never>;
+    CompositeTypes: Record<string, never>;
   };
-}
+};
