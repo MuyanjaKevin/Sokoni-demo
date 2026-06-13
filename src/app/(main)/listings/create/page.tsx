@@ -3,7 +3,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { ImagePlus, Loader2, X } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -38,7 +38,7 @@ const DISTRICTS = [
 
 export default function CreateListingPage(): React.JSX.Element {
   const router = useRouter();
-  const supabase = createClient();
+  const supabase = useMemo(() => createClient(), []);
   const [authChecked, setAuthChecked] = useState(false);
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");

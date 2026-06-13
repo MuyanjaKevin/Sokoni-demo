@@ -176,12 +176,20 @@ export function TransactionWorkspace({
             {formatUGX(transaction.agreed_price)} confirmed. Thanks for trading on
             Sokoni.
           </p>
-          <Link
-            href="/"
-            className="mt-4 inline-flex rounded-lg bg-brand-primary px-4 py-2 text-sm font-medium text-white"
-          >
-            Back to marketplace
-          </Link>
+          <div className="mt-4 flex flex-col gap-2 sm:flex-row sm:justify-center">
+            <Link
+              href={`/ratings/${transaction.id}`}
+              className="inline-flex rounded-lg bg-brand-accent px-4 py-2 text-sm font-semibold text-brand-text"
+            >
+              Rate {isBuyer ? "seller" : "buyer"}
+            </Link>
+            <Link
+              href="/"
+              className="inline-flex rounded-lg bg-brand-primary px-4 py-2 text-sm font-medium text-white"
+            >
+              Back to marketplace
+            </Link>
+          </div>
         </div>
       ) : null}
 
