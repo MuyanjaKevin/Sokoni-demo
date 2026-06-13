@@ -3,6 +3,7 @@ import { notFound, redirect } from "next/navigation";
 import { OfferWorkspace } from "./OfferWorkspace";
 import { createCookieClient } from "@/lib/supabase/cookie";
 import { fetchListingById } from "@/lib/listings-data";
+import { resolveProfileForUser } from "@/lib/profile-user";
 
 interface OfferPageProps {
   params: { id: string };
@@ -26,6 +27,8 @@ export default async function OfferPage({
     data: { user },
   } = await supabase.auth.getUser();
 
+  const profile = user ? await resolveProfileForUser(user) : null;
+
   return (
     <div className="mx-auto max-w-2xl px-4 py-8 sm:px-6">
       <div className="mb-8">
@@ -35,7 +38,10 @@ export default async function OfferPage({
         </p>
       </div>
 
-      <OfferWorkspace listing={listing} userId={user?.id ?? null} />
+      <OfferWorkspace
+        listing={listing}
+        profileId={profile?.id ?? null}
+      />
 
       {!user ? (
         <p className="mt-6 text-center text-sm text-brand-muted">

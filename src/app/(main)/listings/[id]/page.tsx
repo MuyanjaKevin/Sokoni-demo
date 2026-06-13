@@ -13,6 +13,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { formatCondition } from "@/lib/listings";
 import { fetchListingById } from "@/lib/listings-data";
+import { resolveListingPhotoUrls } from "@/lib/listing-images";
 import { formatUGX } from "@/lib/utils";
 
 interface ListingDetailPageProps {
@@ -34,10 +35,11 @@ export default async function ListingDetailPage({
     notFound();
   }
 
-  const images =
-    listing.photo_urls.length > 0
-      ? listing.photo_urls
-      : ["/placeholder-listing.svg"];
+  const images = resolveListingPhotoUrls(
+    listing.title,
+    listing.category,
+    listing.photo_urls,
+  );
   const seller = listing.seller;
 
   return (

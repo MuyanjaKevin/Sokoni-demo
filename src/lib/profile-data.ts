@@ -13,7 +13,7 @@ export interface PurchaseRow extends Transaction {
 }
 
 export interface InboxItem extends Transaction {
-  listing: Pick<Listing, "id" | "title" | "photo_urls"> | null;
+  listing: Pick<Listing, "id" | "title" | "photo_urls" | "category"> | null;
   counterparty: Pick<Profile, "id" | "display_name"> | null;
 }
 
@@ -115,8 +115,15 @@ export async function fetchUserPurchases(userId: string): Promise<PurchaseRow[]>
   return (data ?? []) as PurchaseRow[];
 }
 
-export async function fetchInboxForUser(userId: string): Promise<InboxItem[]> {
+export async function fetchInboxForUser(
+  profileId: string,
+  authUserId?: string,
+): Promise<InboxItem[]> {
   const admin = createServerClient();
+
+  const participantFilter = authUserId
+    ? `buyer_id.eq.${profileId},seller_id.eq.${profileId},buyer_id.eq.${authUserId},seller_id.eq.${authUserId}`
+    : `buyer_id.eq.${profileId},seller_id.eq.${profileId}`;
 
   const { data, error } = await admin
     .from("transactions")
@@ -126,11 +133,12 @@ export async function fetchInboxForUser(userId: string): Promise<InboxItem[]> {
       listing:listings!listing_id (
         id,
         title,
-        photo_urls
+        photo_urls,
+        category
       )
     `,
     )
-    .or(`buyer_id.eq.${userId},seller_id.eq.${userId}`)
+    .or(participantFilter)
     .in("status", ["pending", "escrowed", "in_delivery"])
     .order("updated_at", { ascending: false });
 
@@ -140,7 +148,9 @@ export async function fetchInboxForUser(userId: string): Promise<InboxItem[]> {
 
   const rows = (data ?? []) as InboxItem[];
   const counterpartyIds = rows.map((row) =>
-    row.buyer_id === userId ? row.seller_id : row.buyer_id,
+    row.buyer_id === profileId || row.buyer_id === authUserId
+      ? row.seller_id
+      : row.buyer_id,
   );
 
   if (counterpartyIds.length === 0) {
@@ -160,7 +170,9 @@ export async function fetchInboxForUser(userId: string): Promise<InboxItem[]> {
     ...row,
     counterparty:
       nameById.get(
-        row.buyer_id === userId ? row.seller_id : row.buyer_id,
+        row.buyer_id === profileId || row.buyer_id === authUserId
+          ? row.seller_id
+          : row.buyer_id,
       ) ?? null,
   }));
 }

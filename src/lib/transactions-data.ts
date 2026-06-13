@@ -4,7 +4,7 @@ import type { Escrow, Listing, Transaction } from "@/types";
 export interface TransactionDetail extends Transaction {
   listing: Pick<
     Listing,
-    "id" | "title" | "photo_urls" | "asking_price" | "district"
+    "id" | "title" | "photo_urls" | "asking_price" | "district" | "category"
   > | null;
   escrow: Escrow | null;
 }
@@ -24,7 +24,8 @@ export async function fetchTransactionById(
         title,
         photo_urls,
         asking_price,
-        district
+        district,
+        category
       ),
       escrow (*)
     `,

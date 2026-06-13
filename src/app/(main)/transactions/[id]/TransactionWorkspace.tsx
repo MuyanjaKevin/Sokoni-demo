@@ -21,6 +21,7 @@ import { TransactionStepper } from "@/components/TransactionStepper";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { getListingPrimaryPhoto } from "@/lib/listing-images";
 import type { TransactionDetail } from "@/lib/transactions-data";
 import { formatUGX } from "@/lib/utils";
 import type { ApiResponse } from "@/types";
@@ -42,7 +43,14 @@ export function TransactionWorkspace({
   const isBuyer = userId === transaction.buyer_id;
   const isSeller = userId === transaction.seller_id;
   const listing = transaction.listing;
-  const imageUrl = listing?.photo_urls[0] ?? "/placeholder-listing.svg";
+  const imageUrl =
+    listing != null
+      ? getListingPrimaryPhoto(
+          listing.title,
+          listing.category,
+          listing.photo_urls,
+        )
+      : "/placeholder-listing.svg";
 
   const fireConfetti = useCallback((): void => {
     void confetti({

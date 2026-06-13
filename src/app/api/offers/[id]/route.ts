@@ -7,6 +7,7 @@ import {
   isOfferExpired,
 } from "@/lib/offers";
 import { createCookieClient } from "@/lib/supabase/cookie";
+import { resolveProfileForUser } from "@/lib/profile-user";
 import { createServerClient } from "@/lib/supabase/server";
 
 const actionSchema = z.object({
@@ -94,12 +95,17 @@ export async function PATCH(
 
     const sellerId = listing.seller_id;
     const buyerId = offer.buyer_id as string;
+    const profile = await resolveProfileForUser(user);
+
+    if (!profile) {
+      return jsonError("Complete your profile first", 400);
+    }
 
     if (
       !canTransitionOffer(
         offer.status,
         action,
-        user.id,
+        profile.id,
         buyerId,
         sellerId,
       )

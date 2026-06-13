@@ -3,6 +3,7 @@ import Link from "next/link";
 import { MapPin, Star } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { formatCondition } from "@/lib/listings";
+import { getListingPrimaryPhoto } from "@/lib/listing-images";
 import { formatUGX } from "@/lib/utils";
 import type { ListingWithSeller } from "@/lib/listings-data";
 
@@ -15,7 +16,11 @@ export function ListingCard({
   listing,
   priority = false,
 }: ListingCardProps): React.JSX.Element {
-  const imageUrl = listing.photo_urls[0] ?? "/placeholder-listing.svg";
+  const imageUrl = getListingPrimaryPhoto(
+    listing.title,
+    listing.category,
+    listing.photo_urls,
+  );
   const sellerName = listing.seller?.display_name ?? "Seller";
   const location = listing.district ?? listing.seller?.district ?? "Uganda";
 

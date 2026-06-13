@@ -11,3 +11,15 @@ export interface OfferWithBuyer extends Offer {
   } | null;
   transaction: { id: string } | null;
 }
+
+export interface InboxOfferItem extends OfferWithBuyer {
+  listing: {
+    id: string;
+    title: string;
+    photo_urls: string[];
+    asking_price: number;
+    seller_id: string;
+    category: string;
+  } | null;
+  role: "seller" | "buyer";
+}

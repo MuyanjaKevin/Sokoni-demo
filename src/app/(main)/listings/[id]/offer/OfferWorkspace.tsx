@@ -18,32 +18,35 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { MAX_OFFER_ROUNDS, type OfferWithBuyer } from "@/lib/offers-shared";
+import { getListingPrimaryPhoto } from "@/lib/listing-images";
 import type { ListingWithSeller } from "@/lib/listings-data";
+import { createClient } from "@/lib/supabase/client";
 import { formatUGX } from "@/lib/utils";
 import type { ApiResponse } from "@/types";
 
 interface OfferWorkspaceProps {
   listing: ListingWithSeller;
-  userId: string | null;
+  profileId: string | null;
 }
 
 export function OfferWorkspace({
   listing,
-  userId,
+  profileId,
 }: OfferWorkspaceProps): React.JSX.Element {
   const router = useRouter();
+  const supabase = useMemo(() => createClient(), []);
   const [offers, setOffers] = useState<OfferWithBuyer[]>([]);
   const [loading, setLoading] = useState(true);
   const [price, setPrice] = useState("");
   const [counterPrice, setCounterPrice] = useState("");
   const [submitting, setSubmitting] = useState(false);
 
-  const isSeller = userId === listing.seller_id;
-  const isBuyer = userId !== null && !isSeller;
+  const isSeller = profileId === listing.seller_id;
+  const isBuyer = profileId !== null && !isSeller;
 
   const myOffer = useMemo(
-    () => offers.find((offer) => offer.buyer_id === userId) ?? null,
-    [offers, userId],
+    () => offers.find((offer) => offer.buyer_id === profileId) ?? null,
+    [offers, profileId],
   );
 
   const sellerPendingOffers = useMemo(
@@ -78,12 +81,38 @@ export function OfferWorkspace({
   }, [listing.id]);
 
   useEffect(() => {
-    if (userId) {
+    if (profileId) {
       void loadOffers();
     } else {
       setLoading(false);
     }
-  }, [loadOffers, userId]);
+  }, [loadOffers, profileId]);
+
+  useEffect(() => {
+    if (!profileId) {
+      return;
+    }
+
+    const channel = supabase
+      .channel(`offers:${listing.id}`)
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "offers",
+          filter: `listing_id=eq.${listing.id}`,
+        },
+        () => {
+          void loadOffers();
+        },
+      )
+      .subscribe();
+
+    return () => {
+      void supabase.removeChannel(channel);
+    };
+  }, [listing.id, loadOffers, profileId, supabase]);
 
   async function sendOffer(): Promise<void> {
     const amount = Number(price);
@@ -109,7 +138,7 @@ export function OfferWorkspace({
         return;
       }
 
-      toast.success("Offer sent!");
+      toast.success("Offer sent! The seller will see it in their inbox.");
       setPrice("");
       await loadOffers();
     } catch {
@@ -167,9 +196,13 @@ export function OfferWorkspace({
     }
   }
 
-  const imageUrl = listing.photo_urls[0] ?? "/placeholder-listing.svg";
+  const imageUrl = getListingPrimaryPhoto(
+    listing.title,
+    listing.category,
+    listing.photo_urls,
+  );
 
-  if (!userId) {
+  if (!profileId) {
     return (
       <Card className="rounded-xl border-0 shadow-md">
         <CardContent className="py-12 text-center">

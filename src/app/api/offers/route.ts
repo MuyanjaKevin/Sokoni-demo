@@ -2,6 +2,7 @@ import { z } from "zod";
 import { jsonError, jsonSuccess } from "@/lib/api";
 import { fetchOffersForListing } from "@/lib/offers";
 import { createCookieClient } from "@/lib/supabase/cookie";
+import { resolveProfileForUser } from "@/lib/profile-user";
 import { createServerClient } from "@/lib/supabase/server";
 
 const createOfferSchema = z.object({
@@ -54,6 +55,12 @@ export async function POST(request: Request): Promise<Response> {
       return jsonError("Invalid offer. Price must be a positive number.");
     }
 
+    const profile = await resolveProfileForUser(user);
+
+    if (!profile) {
+      return jsonError("Complete your profile before making offers", 400);
+    }
+
     const admin = createServerClient();
     const { data: listing, error: listingError } = await admin
       .from("listings")
@@ -67,7 +74,7 @@ export async function POST(request: Request): Promise<Response> {
       return jsonError("Listing not found or no longer available", 404);
     }
 
-    if (listing.seller_id === user.id) {
+    if (listing.seller_id === profile.id) {
       return jsonError("You cannot make an offer on your own listing");
     }
 
@@ -75,7 +82,7 @@ export async function POST(request: Request): Promise<Response> {
       .from("offers")
       .select("id")
       .eq("listing_id", parsed.data.listing_id)
-      .eq("buyer_id", user.id)
+      .eq("buyer_id", profile.id)
       .in("status", ["pending", "countered"])
       .limit(1);
 
@@ -89,7 +96,7 @@ export async function POST(request: Request): Promise<Response> {
       .from("offers")
       .insert({
         listing_id: parsed.data.listing_id,
-        buyer_id: user.id,
+        buyer_id: profile.id,
         proposed_price: parsed.data.proposed_price,
         status: "pending",
         round: 1,

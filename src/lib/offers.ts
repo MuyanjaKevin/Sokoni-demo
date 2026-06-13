@@ -1,8 +1,12 @@
-import { MAX_OFFER_ROUNDS, type OfferWithBuyer } from "@/lib/offers-shared";
+import {
+  MAX_OFFER_ROUNDS,
+  type InboxOfferItem,
+  type OfferWithBuyer,
+} from "@/lib/offers-shared";
 import { createServerClient } from "@/lib/supabase/server";
 import type { Offer, OfferStatus } from "@/types";
 
-export { MAX_OFFER_ROUNDS, type OfferWithBuyer };
+export { MAX_OFFER_ROUNDS, type InboxOfferItem, type OfferWithBuyer };
 
 export async function fetchOffersForListing(
   listingId: string,
@@ -31,6 +35,81 @@ export async function fetchOffersForListing(
   }
 
   return (data ?? []) as OfferWithBuyer[];
+}
+
+const INBOX_OFFER_SELECT = `
+  *,
+  buyer:profiles!buyer_id (
+    id,
+    display_name,
+    avg_rating
+  ),
+  listing:listings!listing_id (
+    id,
+    title,
+    photo_urls,
+    asking_price,
+    seller_id,
+    category,
+    status
+  ),
+  transaction:transactions!offer_id (
+    id
+  )
+`;
+
+export async function fetchOfferInboxForProfile(
+  profileId: string,
+): Promise<InboxOfferItem[]> {
+  const admin = createServerClient();
+
+  const { data: sellerListings } = await admin
+    .from("listings")
+    .select("id")
+    .eq("seller_id", profileId)
+    .eq("status", "active");
+
+  const listingIds = (sellerListings ?? []).map((row) => row.id);
+  const items: InboxOfferItem[] = [];
+
+  if (listingIds.length > 0) {
+    const { data: sellerOffers, error: sellerError } = await admin
+      .from("offers")
+      .select(INBOX_OFFER_SELECT)
+      .in("listing_id", listingIds)
+      .eq("status", "pending")
+      .order("created_at", { ascending: false });
+
+    if (sellerError) {
+      throw new Error(sellerError.message);
+    }
+
+    for (const row of sellerOffers ?? []) {
+      items.push({ ...(row as InboxOfferItem), role: "seller" });
+    }
+  }
+
+  const { data: buyerOffers, error: buyerError } = await admin
+    .from("offers")
+    .select(INBOX_OFFER_SELECT)
+    .eq("buyer_id", profileId)
+    .eq("status", "countered")
+    .order("created_at", { ascending: false });
+
+  if (buyerError) {
+    throw new Error(buyerError.message);
+  }
+
+  for (const row of buyerOffers ?? []) {
+    items.push({ ...(row as InboxOfferItem), role: "buyer" });
+  }
+
+  items.sort(
+    (a, b) =>
+      new Date(b.created_at).getTime() - new Date(a.created_at).getTime(),
+  );
+
+  return items;
 }
 
 export async function createTransactionFromAcceptedOffer(
