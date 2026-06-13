@@ -1,6 +1,7 @@
 import { z } from "zod";
 import { jsonError, jsonSuccess } from "@/lib/api";
 import { fetchListings } from "@/lib/listings-data";
+import { ensureProfileForUser } from "@/lib/profile-user";
 import { createCookieClient } from "@/lib/supabase/cookie";
 import { createServerClient } from "@/lib/supabase/server";
 
@@ -53,14 +54,23 @@ export async function POST(request: Request): Promise<Response> {
     const parsed = createListingSchema.safeParse(body);
 
     if (!parsed.success) {
-      return jsonError("Invalid listing details");
+      return jsonError("Invalid listing details. Check title, price, and photos.");
+    }
+
+    let sellerProfile;
+    try {
+      sellerProfile = await ensureProfileForUser(user);
+    } catch (error) {
+      const message =
+        error instanceof Error ? error.message : "Complete your profile first";
+      return jsonError(message, 400);
     }
 
     const admin = createServerClient();
     const { data, error } = await admin
       .from("listings")
       .insert({
-        seller_id: user.id,
+        seller_id: sellerProfile.id,
         title: parsed.data.title,
         description: parsed.data.description ?? null,
         asking_price: parsed.data.asking_price,
@@ -74,7 +84,13 @@ export async function POST(request: Request): Promise<Response> {
       .single();
 
     if (error) {
-      return jsonError("Could not create listing", 500);
+      console.error("listing insert failed:", error.message);
+      return jsonError(
+        error.message.includes("foreign key")
+          ? "Your seller profile is not set up. Finish profile setup and try again."
+          : "Could not create listing",
+        500,
+      );
     }
 
     return jsonSuccess({ id: data.id }, 201);

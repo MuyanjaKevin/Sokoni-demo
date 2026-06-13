@@ -8,7 +8,9 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { createClient } from "@/lib/supabase/client";
+import { isValidUgandaPhone, normalizeUgandaPhone } from "@/lib/auth";
 import type { ApiResponse } from "@/types";
+import type { Profile } from "@/types";
 
 const DISTRICTS = [
   "Kampala",
@@ -25,6 +27,7 @@ export default function ProfileSetupPage(): React.JSX.Element {
   const router = useRouter();
   const supabase = useMemo(() => createClient(), []);
   const [displayName, setDisplayName] = useState("");
+  const [phone, setPhone] = useState("+256");
   const [district, setDistrict] = useState(DISTRICTS[0]);
   const [loading, setLoading] = useState(false);
   const [checkingSession, setCheckingSession] = useState(true);
@@ -36,6 +39,11 @@ export default function ProfileSetupPage(): React.JSX.Element {
       if (!data.session) {
         router.replace("/login");
         return;
+      }
+
+      const metaPhone = data.session.user.user_metadata?.phone;
+      if (typeof metaPhone === "string" && metaPhone.startsWith("+256")) {
+        setPhone(metaPhone);
       }
 
       setCheckingSession(false);
@@ -55,6 +63,15 @@ export default function ProfileSetupPage(): React.JSX.Element {
       return;
     }
 
+    const normalizedPhone = phone.startsWith("+256")
+      ? phone
+      : normalizeUgandaPhone(phone.replace(/^\+256/, ""));
+
+    if (!isValidUgandaPhone(normalizedPhone)) {
+      toast.error("Enter a valid Uganda phone (+256XXXXXXXXX)");
+      return;
+    }
+
     setLoading(true);
 
     try {
@@ -68,11 +85,16 @@ export default function ProfileSetupPage(): React.JSX.Element {
       const response = await fetch("/api/auth/complete-profile", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ display_name: trimmed, district }),
+        body: JSON.stringify({
+          display_name: trimmed,
+          district,
+          phone: normalizedPhone,
+        }),
       });
 
       const result = (await response.json()) as ApiResponse<{
         redirectTo: string;
+        profile: Profile;
       }>;
 
       if (!result.success) {
@@ -118,6 +140,19 @@ export default function ProfileSetupPage(): React.JSX.Element {
               maxLength={50}
               required
             />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="phone">Phone number</Label>
+            <Input
+              id="phone"
+              value={phone}
+              onChange={(event) => setPhone(event.target.value)}
+              placeholder="+256771234567"
+              required
+            />
+            <p className="text-xs text-brand-muted">
+              Used for sign-in and buyer contact
+            </p>
           </div>
           <div className="space-y-2">
             <Label htmlFor="district">District</Label>

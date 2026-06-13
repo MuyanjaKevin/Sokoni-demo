@@ -1,11 +1,12 @@
 import { z } from "zod";
 import { jsonError, jsonSuccess } from "@/lib/api";
+import { updateProfileForUser } from "@/lib/profile-user";
 import { createCookieClient } from "@/lib/supabase/cookie";
-import { createServerClient } from "@/lib/supabase/server";
 
 const profileSchema = z.object({
   display_name: z.string().trim().min(2).max(50),
   district: z.string().trim().min(1).max(100),
+  phone: z.string().trim().optional(),
 });
 
 export async function POST(request: Request): Promise<Response> {
@@ -27,22 +28,16 @@ export async function POST(request: Request): Promise<Response> {
       return jsonError("Invalid profile details");
     }
 
-    const admin = createServerClient();
-    const { error: updateError } = await admin
-      .from("profiles")
-      .update({
-        display_name: parsed.data.display_name,
-        district: parsed.data.district,
-        updated_at: new Date().toISOString(),
-      })
-      .eq("id", user.id);
+    const profile = await updateProfileForUser(user, {
+      display_name: parsed.data.display_name,
+      district: parsed.data.district,
+      ...(parsed.data.phone ? { phone: parsed.data.phone } : {}),
+    });
 
-    if (updateError) {
-      return jsonError("Could not save profile", 500);
-    }
-
-    return jsonSuccess({ redirectTo: "/" });
-  } catch {
-    return jsonError("Something went wrong", 500);
+    return jsonSuccess({ redirectTo: "/", profile });
+  } catch (error) {
+    const message =
+      error instanceof Error ? error.message : "Something went wrong";
+    return jsonError(message, 400);
   }
 }

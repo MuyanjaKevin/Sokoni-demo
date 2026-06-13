@@ -1,7 +1,10 @@
 import Link from "next/link";
-import { Plus, Search, Store } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { Inbox, Plus, Search, Store, User } from "lucide-react";
 import { createCookieClient } from "@/lib/supabase/cookie";
+import {
+  navbarDisplayName,
+  resolveProfileForUser,
+} from "@/lib/profile-user";
 
 export async function MainNavbar(): Promise<React.JSX.Element> {
   const supabase = createCookieClient();
@@ -12,12 +15,8 @@ export async function MainNavbar(): Promise<React.JSX.Element> {
   let displayName: string | null = null;
 
   if (user) {
-    const { data: profile } = await supabase
-      .from("profiles")
-      .select("display_name")
-      .eq("id", user.id)
-      .maybeSingle();
-    displayName = profile?.display_name ?? null;
+    const profile = await resolveProfileForUser(user);
+    displayName = navbarDisplayName(profile);
   }
 
   return (
@@ -56,9 +55,23 @@ export async function MainNavbar(): Promise<React.JSX.Element> {
             <span className="hidden sm:inline">Sell</span>
           </Link>
           {user ? (
-            <span className="hidden max-w-[120px] truncate rounded-lg bg-brand-primary/5 px-3 py-2 text-sm font-medium text-brand-primary sm:inline">
-              {displayName ?? "Account"}
-            </span>
+            <>
+              <Link
+                href="/inbox"
+                className="flex h-9 w-9 items-center justify-center rounded-lg text-brand-muted hover:bg-brand-background"
+                aria-label="Inbox"
+              >
+                <Inbox className="h-5 w-5" />
+              </Link>
+              <Link
+                href="/profile/me"
+                className="inline-flex max-w-[140px] items-center gap-1.5 truncate rounded-lg bg-brand-primary/5 px-3 py-2 text-sm font-medium text-brand-primary hover:bg-brand-primary/10"
+                title={displayName ?? "Account"}
+              >
+                <User className="h-4 w-4 shrink-0" />
+                <span className="truncate">{displayName ?? "Account"}</span>
+              </Link>
+            </>
           ) : (
             <Link
               href="/login"

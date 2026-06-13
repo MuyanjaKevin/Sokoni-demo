@@ -6,10 +6,30 @@ function requireEnv(key: string): string {
   return value;
 }
 
+function requirePublicEnv(
+  key: "NEXT_PUBLIC_SUPABASE_URL" | "NEXT_PUBLIC_SUPABASE_ANON_KEY" | "NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME",
+): string {
+  // Next.js only inlines NEXT_PUBLIC_* when accessed with a static property name.
+  const value =
+    key === "NEXT_PUBLIC_SUPABASE_URL"
+      ? process.env.NEXT_PUBLIC_SUPABASE_URL
+      : key === "NEXT_PUBLIC_SUPABASE_ANON_KEY"
+        ? process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+        : process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME;
+
+  if (!value || value.trim() === "") {
+    throw new Error(`Missing required env var: ${key}`);
+  }
+  return value;
+}
+
+export type PublicSupabaseConfig = {
+  url: string;
+  anonKey: string;
+};
+
 type AppConfig = {
-  supabase: {
-    url: string;
-    anonKey: string;
+  supabase: PublicSupabaseConfig & {
     serviceRoleKey: string;
   };
   cloudinary: {
@@ -19,23 +39,38 @@ type AppConfig = {
   };
 };
 
-let cachedConfig: AppConfig | null = null;
+let cachedPublicConfig: PublicSupabaseConfig | null = null;
+let cachedServerConfig: AppConfig | null = null;
 
-/** Lazy load so client bundles never evaluate env at import time. */
+/**
+ * Safe for browser/client — only reads NEXT_PUBLIC_* Supabase vars.
+ * Server-only secrets are not required here.
+ */
+export function getPublicSupabaseConfig(): PublicSupabaseConfig {
+  if (!cachedPublicConfig) {
+    cachedPublicConfig = {
+      url: requirePublicEnv("NEXT_PUBLIC_SUPABASE_URL"),
+      anonKey: requirePublicEnv("NEXT_PUBLIC_SUPABASE_ANON_KEY"),
+    };
+  }
+  return cachedPublicConfig;
+}
+
+/** Server/API only — includes service role and Cloudinary secrets. */
 export function getConfig(): AppConfig {
-  if (!cachedConfig) {
-    cachedConfig = {
+  if (!cachedServerConfig) {
+    const publicSupabase = getPublicSupabaseConfig();
+    cachedServerConfig = {
       supabase: {
-        url: requireEnv("NEXT_PUBLIC_SUPABASE_URL"),
-        anonKey: requireEnv("NEXT_PUBLIC_SUPABASE_ANON_KEY"),
+        ...publicSupabase,
         serviceRoleKey: requireEnv("SUPABASE_SERVICE_ROLE_KEY"),
       },
       cloudinary: {
-        cloudName: requireEnv("NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME"),
+        cloudName: requirePublicEnv("NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME"),
         apiKey: requireEnv("CLOUDINARY_API_KEY"),
         apiSecret: requireEnv("CLOUDINARY_API_SECRET"),
       },
     };
   }
-  return cachedConfig;
+  return cachedServerConfig;
 }
